@@ -106,9 +106,9 @@ tests/                          python3 -m pytest tests/
 
 Force pushes, pushes to protected branches and `gh pr merge` are not prompted at all: they are blocked outright.
 
-**Limits, so you know what this does and doesn't promise.** The hook recognizes `git push` written in a Bash command; a push made some other way (a script that pushes internally, or a GitHub API call) is not recognized. Claude Code's "ask" is also reported not to prompt in some permission modes and surfaces: reports say it is honored in the terminal CLI, including auto-accept, but not in the VS Code panel's auto mode nor in the `auto` permission mode. There is also a report that an "ask" from a hook can override a `permissions.deny` rule for the same command. Treat the skill's own approval question as the layer that always applies, and check how your setup behaves once: run `git push --dry-run` (no prompt expected), then a real push on a scratch branch (prompt expected).
+**Limits, so you know what this does and doesn't promise.** The hook recognizes `git push` written in a Bash command; a push made some other way (a script that pushes internally, or a GitHub API call) is not recognized. `git -C <path> push` is checked against the repository at `<path>`, but a `cd <path> && git push` is checked against the session's own repository. Claude Code's "ask" is also reported not to prompt in some permission modes and surfaces: reports say it is honored in the terminal CLI, including auto-accept, but not in the VS Code panel's auto mode nor in the `auto` permission mode. There is also a report that an "ask" from a hook can override a `permissions.deny` rule for the same command. Treat the skill's own approval question as the layer that always applies, and check how your setup behaves once: run `git push --dry-run` (no prompt expected), then a real push on a scratch branch (prompt expected).
 
-`pr-review` sets `disallowed-tools: Edit Write` so it cannot change your code.
+`pr-review` sets `disallowed-tools: Edit Write`, and the `reviewer` and `explorer` subagents have no Edit or Write tools. They do have Bash (to run `gh` and `git`), so staying read-only is an instruction they follow, not something the harness enforces: a Bash command could still change files.
 
 ## Hooks
 

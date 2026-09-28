@@ -21,7 +21,7 @@ User argument: `$ARGUMENTS`
 ### 1. Load context
 - Read `.aderx-dev/config.json`; if missing, tell the user to run `/aderx-dev:init` and stop.
 - Resolve the ticket id: the argument, else `.aderx-dev/current`, else the current branch name.
-- Read `<specs.dir>/<TICKET>.md` (the specs directory is `specs.dir` in the config, default `.aderx-dev/specs`). It should have `status: built` and a `## Verification` section with no failures. If the spec is missing, continue in **diff-only mode**: ask for the ticket id, say the PR description will be based on the diff alone, and skip the acceptance-criteria parts. If verification shows FAIL or UNVERIFIED items, stop and tell the user to finish `/aderx-dev:build` first.
+- Read `<specs.dir>/<TICKET>.md` (the specs directory is `specs.dir` in the config, default `.aderx-dev/specs`). If the spec is missing, continue in **diff-only mode**: ask for the ticket id, say the PR description will be based on the diff alone, and skip the acceptance-criteria parts. If the spec exists, require `status: built` and a `## Verification` section with no FAIL or UNVERIFIED items. If the status is `draft` or `approved`, or verification is missing or failing, stop: the work has not been built and independently verified yet, so tell the user to finish `/aderx-dev:build` first. If it is `pr-open`, a PR already exists (`pr_url`): show it and ask whether to continue.
 
 ### 2. Pre-flight
 - Confirm you are on the spec's feature branch and not on a protected branch or the base branch.

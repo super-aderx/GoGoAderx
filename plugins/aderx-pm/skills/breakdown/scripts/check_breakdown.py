@@ -8,7 +8,8 @@ Reads the first ```json block containing an "issues" array and checks:
   - every dependency sits in an earlier wave
   - no two issues in the same wave touch overlapping paths
 
-Exit code 0 when valid, 1 when problems are found, 2 on bad input.
+Exit code 0 when valid, 1 when problems are found, 2 on bad input (including issues
+that are not objects with a string id, an integer wave, and string lists).
 """
 import json
 import re
@@ -28,6 +29,29 @@ def load_graph(path):
             return data
     print(f"error: no ```json block with an \"issues\" array found in {path}", file=sys.stderr)
     sys.exit(2)
+
+
+def schema_errors(issues):
+    """Shape problems that would make the graph checks meaningless (or crash)."""
+    if not issues:
+        return ["\"issues\" is empty"]
+    errors = []
+    for n, issue in enumerate(issues, 1):
+        if not isinstance(issue, dict):
+            errors.append(f"issue #{n} is not an object")
+            continue
+        name = issue.get("id")
+        if not isinstance(name, str) or not name:
+            errors.append(f"issue #{n} has no string \"id\"")
+            name = f"issue #{n}"
+        wave = issue.get("wave")
+        if "wave" in issue and (not isinstance(wave, int) or isinstance(wave, bool)):
+            errors.append(f"{name}: \"wave\" must be an integer")
+        for key in ("depends_on", "touches"):
+            value = issue.get(key, [])
+            if not isinstance(value, list) or not all(isinstance(v, str) for v in value):
+                errors.append(f"{name}: \"{key}\" must be a list of strings")
+    return errors
 
 
 def norm(p):
@@ -84,6 +108,12 @@ def main():
         print("usage: check_breakdown.py <breakdown.md>", file=sys.stderr)
         sys.exit(2)
     issues = load_graph(sys.argv[1])["issues"]
+    bad = schema_errors(issues)
+    if bad:
+        print("error: the issue list is malformed:", file=sys.stderr)
+        for e in bad:
+            print(f"  - {e}", file=sys.stderr)
+        sys.exit(2)
     errors = []
 
     ids = [i.get("id") for i in issues]

@@ -203,7 +203,7 @@ def test_format_respects_configured_ignore_dirs(tmp_path):
 # --------------------------------------------------------------------------------------
 # Push approval: every real `git push` must trigger Claude Code's own confirmation prompt
 # --------------------------------------------------------------------------------------
-from guard_git import pushes_in, is_dry_run  # noqa: E402
+from guard_git import is_dry_run, parse_push_args, push_invocations  # noqa: E402
 
 
 def decision(result: subprocess.CompletedProcess) -> dict:
@@ -217,27 +217,73 @@ def run_guard(repo: Path, command: str) -> subprocess.CompletedProcess:
 @pytest.mark.parametrize(
     "command, expected",
     [
-        ("git push origin feature", [["origin", "feature"]]),
-        ("git add . && git commit -m x && git push -u origin feature", [["-u", "origin", "feature"]]),
-        ("git -C ../other push origin x", [["origin", "x"]]),
-        ("git push origin a; git push origin b", [["origin", "a"], ["origin", "b"]]),
+        ("git push origin feature", [([], ["origin", "feature"])]),
+        ("git add . && git commit -m x && git push -u origin feature", [([], ["-u", "origin", "feature"])]),
+        ("git -C ../other push origin x", [(["-C", "../other"], ["origin", "x"])]),
+        ("git push origin a; git push origin b", [([], ["origin", "a"]), ([], ["origin", "b"])]),
         ("git status", []),
         ("git commit -m 'run git push later'", []),
         ("echo 'git push origin main'", []),
     ],
 )
-def test_pushes_in(command, expected):
-    assert pushes_in(command) == expected
+def test_push_invocations(command, expected):
+    assert push_invocations(command) == expected
 
 
-def test_pushes_in_errs_toward_asking_when_unparseable():
-    assert pushes_in("git push origin x '") == [[]]
-    assert pushes_in("echo 'unbalanced") == []
+def test_push_invocations_err_toward_asking_when_unparseable():
+    assert push_invocations("git push origin x '") == [([], [])]
+    assert push_invocations("echo 'unbalanced") == []
 
 
 def test_is_dry_run():
-    assert is_dry_run(["--dry-run", "origin", "x"]) and is_dry_run(["-n"])
+    assert is_dry_run(["--dry-run", "origin", "x"]) and is_dry_run(["-n"]) and is_dry_run(["-un"])
     assert not is_dry_run(["-u", "origin", "x"])
+    assert not is_dry_run(["-o", "-n", "origin"])  # "-n" is the push option's value here
+
+
+@pytest.mark.parametrize(
+    "args, remote, refspecs",
+    [
+        (["-o", "ci.skip", "origin"], "origin", []),
+        (["-oci.skip", "origin", "feature"], "origin", ["feature"]),
+        (["--push-option", "x", "origin", "main"], "origin", ["main"]),
+        (["--repo", "origin"], "origin", []),
+        (["--repo=origin", "main"], "main", []),  # like git: the argument wins over --repo
+        (["origin", "--", "-weird"], "origin", ["-weird"]),
+    ],
+)
+def test_parse_push_args_reads_option_values_like_git(args, remote, refspecs):
+    push = parse_push_args(args)
+    assert (push.remote, push.refspecs) == (remote, refspecs)
+
+
+@pytest.mark.parametrize(
+    "command",
+    ["git push -o ci.skip origin", "git push --push-option ci.skip origin",
+     "git push --repo origin", "git push -uo ci.skip origin", "git push --branches"],
+)
+def test_option_values_do_not_hide_a_push_to_the_current_protected_branch(command):
+    assert check_command(command, "main", PROTECTED), command
+
+
+def test_option_values_are_not_mistaken_for_flags():
+    assert check_command("git push -oforce origin feature", "feature", PROTECTED) is None
+
+
+def test_git_dash_c_checks_the_branch_of_the_target_repo(tmp_path):
+    repo = make_repo(tmp_path / "work", {"git": {"baseBranch": "main"}})
+    other = tmp_path / "other"
+    other.mkdir()
+    subprocess.run(["git", "init", "-q", "-b", "main"], cwd=other, check=True)
+    git(other, "commit", "--allow-empty", "-m", "on main")
+    for command in ("git -C ../other push", "git -C ../other push origin HEAD", f"git -C {other} push origin"):
+        result = run_guard(repo, command)
+        assert result.returncode == 2, command
+        assert "'main'" in result.stderr, command
+
+    subprocess.run(["git", "checkout", "-q", "-b", "topic"], cwd=other, check=True)
+    reason = decision(run_guard(repo, "git -C ../other push"))["permissionDecisionReason"]
+    assert "ref: topic" in reason
 
 
 def test_every_real_push_asks_the_user(tmp_path):

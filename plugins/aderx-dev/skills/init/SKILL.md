@@ -43,7 +43,7 @@ If the text `${CLAUDE_SKILL_DIR}` appears unexpanded, or the directory does not 
 9. **Write the files.**
    - `.aderx-dev/config.json`.
    - Copy each accepted built-in profile from the skill folder to `.aderx-dev/profiles/<name>.md`; write approved generated profiles to the same place. The project now owns those files: they can be edited and should be committed alongside the config.
-   - Set up ignore rules without touching tracked files: append these lines to the repo's local exclude file (find it with `git rev-parse --git-path info/exclude`), skipping any already present: `.aderx-dev/current`, and `<specs.dir>/` (default `.aderx-dev/specs/`) when `specs.commit` is false.
+   - Set up ignore rules without touching tracked files, in the repo's local exclude file (find it with `git rev-parse --git-path info/exclude`). Append `.aderx-dev/current` if it is not already there. For the specs directory, make the file match the config: when `specs.commit` is false, append `<specs.dir>/` (default `.aderx-dev/specs/`) if missing; when it is true, remove that line if an earlier run added it, otherwise git keeps ignoring the specs and `pr-create` cannot commit them. On a re-run where `specs.dir` changed, also remove the line for the previous specs directory. Touch no other lines in the file.
 
 10. **Linear access.** The plugin does not ship a Linear connection; the user brings their own. Check that Linear tools are available (look them up with ToolSearch if they are deferred). If there are none, tell the user to connect Linear, for example with the claude.ai Linear connector or `claude mcp add --transport http linear https://mcp.linear.app/mcp`, and to sign in through `/mcp`.
 
