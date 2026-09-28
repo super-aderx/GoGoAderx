@@ -15,9 +15,8 @@ User argument: `$ARGUMENTS`
 
 ### 1. Load the spec
 - Read `.aderx-dev/config.json`. If missing, tell the user to run `/aderx-dev:init` and stop.
-- Load the active profiles: for each name in the config's `profiles`, read `.aderx-dev/profiles/<name>.md` (skip any that are missing). You will use `Testing conventions`, `Build notes` and `Shortcuts to flag`. If an area names a `profile`, that profile governs files in that area.
 - Resolve the ticket id: the argument, else `.aderx-dev/current`, else the id in the current branch name, else ask.
-- Read `<specs.dir>/<TICKET>.md` in full (the specs directory is `specs.dir` in the config, default `.aderx-dev/specs`). If it does not exist, tell the user to run `/aderx-dev:plan <TICKET>` and stop.
+- Read `.aderx-dev/specs/<TICKET>.md` in full. If it does not exist, tell the user to run `/aderx-dev:plan <TICKET>` and stop.
 - Require `status: approved`. If it is `draft`, stop: an unapproved spec is not a contract. If it is `built` or `pr-open`, ask whether they want to rebuild or continue.
 
 ### 2. Prepare the branch
@@ -28,7 +27,7 @@ User argument: `$ARGUMENTS`
 ### 3. Implement, tests first
 For each step of the Approach:
 - Write or extend the tests from the spec's Test plan first, and run them to confirm they fail for the right reason. Then implement until they pass. This is what makes the tests prove something.
-- Follow the repo's existing patterns, the helpers the spec points to, and the profiles' `Testing conventions` and `Build notes`. Look at neighbouring code and tests before writing new ones.
+- Follow the repo's `CLAUDE.md`, its existing patterns, and the helpers the spec points to. Look at neighbouring code and tests before writing new ones.
 - Build to the spec's **Interface and I/O contract** exactly: the names, parameters, formats, field names and error behavior it defines. Do not add dependencies beyond the spec's **Dependencies** section. If you find you need to go outside the affected scope, the contract or the dependency list, see step 4.
 - Formatting runs automatically after each edit via a hook. If the hook reports a formatter error, fix it.
 
@@ -38,7 +37,7 @@ Reality sometimes disagrees with the plan.
 - **Significant** (an AC cannot be met as written, the approach does not work, scope must grow, the interface or error behavior must change, or a new dependency is needed): stop, explain what you found, and ask the user. Update the spec only with their agreement.
 
 ### 5. Run the project checks
-For every area listed in the spec's `areas`, run that area's `lint`, `typecheck` and `test` commands from `.aderx-dev/config.json`, from the area's `root`. Fix failures at the cause. Do not skip, delete or weaken tests, and do not add lint or type-check suppressions or focus/skip markers just to get green (the profiles' `Shortcuts to flag` lists the concrete patterns for your stack). If a failure is unrelated and pre-existing, prove it (for example by running it on the base branch) and report it instead of hiding it.
+For every area listed in the spec's `areas`, run that area's `lint`, `typecheck` and `test` commands from `.aderx-dev/config.json`, from the area's `root`. Fix failures at the cause. Do not skip, delete or weaken tests, and do not add lint or type-check suppressions or focus/skip markers just to get green. If a failure is unrelated and pre-existing, prove it (for example by running it on the base branch) and report it instead of hiding it.
 
 ### 6. Independent verification
 Launch the `verifier` subagent (`aderx-dev:verifier`), giving it the path to the spec and nothing else about your process. It checks each acceptance criterion against real evidence, and also the interface contract and the dependency list, and reports PASS, FAIL or UNVERIFIED.

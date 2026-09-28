@@ -5,11 +5,13 @@ Reads the first ```json block containing an "issues" array and checks:
   - issue ids are unique
   - every depends_on id exists
   - no dependency cycles
-  - every dependency sits in an earlier wave
   - no two issues in the same wave touch overlapping paths
 
+Waves are derived from depends_on: an issue's wave is one more than the latest wave
+among its dependencies (0 if it has none). The script prints them for breakdown.md.
+
 Exit code 0 when valid, 1 when problems are found, 2 on bad input (including issues
-that are not objects with a string id, an integer wave, and string lists).
+that are not objects with a string id and string lists).
 """
 import json
 import re
@@ -44,9 +46,6 @@ def schema_errors(issues):
         if not isinstance(name, str) or not name:
             errors.append(f"issue #{n} has no string \"id\"")
             name = f"issue #{n}"
-        wave = issue.get("wave")
-        if "wave" in issue and (not isinstance(wave, int) or isinstance(wave, bool)):
-            errors.append(f"{name}: \"wave\" must be an integer")
         for key in ("depends_on", "touches"):
             value = issue.get(key, [])
             if not isinstance(value, list) or not all(isinstance(v, str) for v in value):
@@ -103,6 +102,21 @@ def find_cycle(issues):
     return None
 
 
+def derive_waves(issues):
+    """Wave of each issue: 0 without dependencies, else 1 + the latest dependency's wave."""
+    deps = {i["id"]: i.get("depends_on", []) for i in issues}
+    waves = {}
+
+    def wave(n):
+        if n not in waves:
+            waves[n] = 1 + max((wave(d) for d in deps[n] if d in deps), default=-1)
+        return waves[n]
+
+    for n in deps:
+        wave(n)
+    return waves
+
+
 def main():
     if len(sys.argv) != 2:
         print("usage: check_breakdown.py <breakdown.md>", file=sys.stderr)
@@ -122,26 +136,22 @@ def main():
     by_id = {i["id"]: i for i in issues}
 
     for i in issues:
-        if "wave" not in i:
-            errors.append(f"{i['id']}: missing wave")
         if not i.get("touches"):
             errors.append(f"{i['id']}: empty touches list — can't check for conflicts")
         for d in i.get("depends_on", []):
             if d not in by_id:
                 errors.append(f"{i['id']}: depends on unknown issue {d}")
-            elif by_id[d].get("wave", 0) >= i.get("wave", 0):
-                errors.append(
-                    f"{i['id']} (wave {i.get('wave')}) depends on {d} "
-                    f"(wave {by_id[d].get('wave')}) — dependency must be in an earlier wave"
-                )
 
     cycle = find_cycle(issues)
     if cycle:
         errors.append("dependency cycle: " + " -> ".join(cycle))
+        print("\n".join(["Cannot derive waves while there is a cycle:"] + [f"  - {e}" for e in errors]))
+        sys.exit(1)
 
+    wave_of = derive_waves(issues)
     waves = defaultdict(list)
     for i in issues:
-        waves[i.get("wave", 0)].append(i)
+        waves[wave_of[i["id"]]].append(i)
     for w, members in waves.items():
         for a, b in combinations(members, 2):
             clashes = sorted(
@@ -162,7 +172,7 @@ def main():
         for e in errors:
             print(f"  - {e}")
         sys.exit(1)
-    print("\nOK: graph is acyclic, dependencies are ordered, and no same-wave file conflicts.")
+    print("\nOK: graph is acyclic and no same-wave file conflicts.")
 
 
 if __name__ == "__main__":

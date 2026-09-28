@@ -20,7 +20,7 @@ This skill chains four stage skills. Each stage writes a markdown file, and the 
 2. **Find the entry stage.** Start at the first stage whose output file is missing. If the user brings an already-detailed spec, they can skip stage 1 — but still sanity-check it against the readiness checklist in the refine skill and only grill on the gaps.
 3. **Run each stage by invoking its skill** (via the Skill tool), passing the slug and any context.
 4. **Checkpoint between stages.** After each stage, give a 3–5 line summary of what was produced and the path of the file, then ask whether to continue to the next stage. The user may want to edit the file, share it, or stop here — the checkpoint is what makes this a collaboration rather than a monologue. If the user said up front "run it all", you can skip checkpoints after stages 2 and 3, but never skip the Linear preview in stage 4: creating tickets is outward-facing and other people will see them.
-5. **Finish** with the list of created issues and which ones can start in parallel right now (wave 0 / unblocked).
+5. **Finish** with the list of created issues, which ones can start in parallel right now (wave 0 / unblocked), and the next command for each: `/aderx-dev:plan <ID>`.
 
 ## If the user edits a file mid-pipeline
 

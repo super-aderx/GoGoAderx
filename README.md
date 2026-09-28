@@ -5,9 +5,9 @@ A Claude Code plugin marketplace (`gogoaderx`) with two plugins that cover the p
 | Plugin | What it does | Start with |
 |---|---|---|
 | [aderx-pm](plugins/aderx-pm/) | Idea → requirements → technical plan → parallelizable issues → Linear tickets | `/aderx-pm:pm` |
-| [aderx-dev](plugins/aderx-dev/) | Linear ticket → approved spec → implementation checked by an independent verifier → PR → review | `/aderx-dev:init`, then `/aderx-dev:plan <TICKET>` |
+| [aderx-dev](plugins/aderx-dev/) | Linear ticket → approved spec → implementation checked by an independent verifier → PR → handle review comments | `/aderx-dev:init`, then `/aderx-dev:plan <TICKET>` |
 
-They connect through Linear: the tickets that `aderx-pm` files are what `aderx-dev:plan` picks up. Each plugin also works on its own.
+My own agentic workflow, tuned to how I work rather than for general use. The plugins connect through Linear: each ticket `aderx-pm` files links back to its tech plan, and `aderx-dev:plan` picks it up from there.
 
 ## Install
 
@@ -17,9 +17,7 @@ They connect through Linear: the tickets that `aderx-pm` files are what `aderx-d
 /plugin install aderx-dev@gogoaderx
 ```
 
-For a local checkout, use `/plugin marketplace add /path/to/GoGoAderx` instead, or load one plugin for a single session with `claude --plugin-dir plugins/<name>`.
-
-Neither plugin ships a Linear connection: connect Linear to Claude Code yourself, for example with the claude.ai Linear connector or `claude mcp add --transport http linear https://mcp.linear.app/mcp`, then sign in through `/mcp`. Both plugins use whichever Linear tools are available.
+For a local checkout, use `/plugin marketplace add /path/to/GoGoAderx`, or `claude --plugin-dir plugins/<name>` for one session. Linear is not bundled: connect it yourself and sign in through `/mcp`.
 
 ## Layout
 

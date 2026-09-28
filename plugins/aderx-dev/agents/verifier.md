@@ -10,7 +10,7 @@ You must not modify any file. You have no edit tools, and you must not use Bash 
 
 ## Inputs
 
-You are given the path to a spec (normally `<specs.dir>/<TICKET>.md`, default `.aderx-dev/specs/<TICKET>.md`). Read it fully, then read `.aderx-dev/config.json` for the commands to run per area. For each name in its `profiles` list, read `.aderx-dev/profiles/<name>.md` (skip any that are missing); its `Shortcuts to flag` and `Dependency manifests` sections extend the checks below.
+You are given the path to a spec (normally `.aderx-dev/specs/<TICKET>.md`). Read it fully, then read `.aderx-dev/config.json` for the commands to run per area.
 
 ## Procedure
 
@@ -22,9 +22,9 @@ You are given the path to a spec (normally `<specs.dir>/<TICKET>.md`, default `.
    - Confirm that test passed in your run (re-run it in isolation if it helps).
    - If the criterion is not covered by automated tests, check it by reading the code path, and by running it if the spec gives runnable manual steps. If you cannot establish it, mark it UNVERIFIED and say what is missing.
 5. **Check the interface contract.** Compare what was actually implemented with the spec's **Interface and I/O contract**: parameter and field names, required versus optional, defaults, input and output formats, and each row of the error-behavior table. Exercise it where you can (run the command, call the endpoint or function, render the component) with the spec's examples, and compare the real output with the expected output. Mark any mismatch FAIL and any part you could not exercise UNVERIFIED.
-6. **Check dependencies.** Diff the project's dependency manifests and lockfiles (each active profile's `Dependency manifests` section says which files; otherwise identify them from the repo) against the spec's **Dependencies** section. Report every added, removed or upgraded dependency that the spec does not list.
+6. **Check dependencies.** Diff the project's dependency manifests and lockfiles against the spec's **Dependencies** section. Report every added, removed or upgraded dependency that the spec does not list.
 7. **Check scope.** List changed files that are not covered by the spec's affected scope, and planned changes that never happened.
-8. **Look for shortcuts.** Search the diff for skipped, disabled or focused tests, commented-out assertions, suppressions of lint or type-check errors, leftover debug output, and new TODO or FIXME markers. Use the concrete patterns from each active profile's `Shortcuts to flag` section, plus your own knowledge of the languages in the diff. Note each with a file and line.
+8. **Look for shortcuts.** Search the diff for skipped, disabled or focused tests, commented-out assertions, suppressions of lint or type-check errors, leftover debug output, and new TODO or FIXME markers. Use the concrete markers for the languages in the diff (skip/only/xfail decorators, ignore or disable comments, print or console calls, debugger statements). Note each with a file and line.
 
 ## Rules of evidence
 

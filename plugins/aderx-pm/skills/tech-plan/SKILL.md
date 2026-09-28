@@ -41,10 +41,8 @@ Last updated: <YYYY-MM-DD>
 ## Codebase context
 <relevant existing modules, patterns being reused, with file paths>
 
-## Architecture
-<components and how they interact; a mermaid diagram if it helps>
-
 ## Components
+<!-- A mermaid diagram above the list if the interactions aren't obvious. -->
 ### <Component>
 - Responsibility:
 - Location: <new/modified paths>
@@ -56,27 +54,13 @@ Last updated: <YYYY-MM-DD>
 ## Interfaces & contracts
 <API endpoints, events, shared types, function signatures — precise enough that two people could implement both sides independently>
 
-## Key flows
-<how each core user flow executes through the components>
-
 ## Decisions
 - D1: <decision> — chosen because <reason>; alternatives: <...>
 
-## Security, privacy & performance
-
-## Rollout & migration
-<feature flags, backfills, backwards compatibility>
-
-## Testing strategy
-<how each acceptance criterion will be verified: unit / integration / e2e>
-
-## Requirement traceability
-| Requirement | Component(s) | Verified by |
-|---|---|---|
-
-## Risks & open questions
+## Risks, rollout & open questions
+<security/privacy/performance concerns, feature flags, backfills, backwards compatibility, anything unresolved>
 ```
 
 The **Interfaces & contracts** section matters most for the next stage: parallel issues can only proceed independently if the contracts between them are pinned down here. Be specific — types, field names, endpoints, status codes.
 
-Every FR in requirements.md should appear in the traceability table. If one doesn't fit the design, that's a sign either the design or the requirement needs revisiting — flag it.
+Every FR in requirements.md should appear under some component's **Requirements covered**. If one doesn't fit the design, that's a sign either the design or the requirement needs revisiting — flag it.

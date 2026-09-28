@@ -19,16 +19,12 @@ If the whole thing is roughly one PR (one agent session, a few hundred lines, on
 
 - **Contracts first (wave 0).** Put shared foundations — types/interfaces, API schemas, DB migrations, stubs, feature flags — into a small first issue. Once it's merged, everything that depends only on the contract can proceed in parallel. This is what makes parallelism safe.
 - **Vertical slices over horizontal layers.** Prefer "user can accept an invite (API + UI + tests)" over "all backend" / "all frontend". Slices can be tested on their own and are less likely to be blocked.
-- **File ownership.** List the files/directories each issue will create or modify (`touches`). Two issues in the **same wave must not touch the same file**. If they'd have to, either move the shared part into the contracts issue, or put one issue in a later wave.
+- **File ownership.** List the files/directories each issue will create or modify (`touches`). Two issues in the **same wave must not touch the same file**. If they'd have to, either move the shared part into the contracts issue, or make one issue depend on the other.
 - **Right-sized.** One issue ≈ one PR ≈ one focused agent session. If an issue needs more than ~5 acceptance criteria or touches many unrelated areas, split it.
 - **Self-contained.** Each issue carries its own context: why it exists, what exactly to build, the relevant contract, the files, and how to verify. An implementer shouldn't need to read the whole spec to do it.
 - **Traceable.** Every FR/AC from requirements.md is covered by at least one issue.
 
-## 4. Build the waves
-
-Wave N contains issues whose dependencies are all in waves < N. Issues within a wave run in parallel. Keep the dependency chain shallow — a long chain of single-issue waves means little parallelism, which is a sign the slicing could be better.
-
-## 5. Validate
+## 4. Validate and get the waves
 
 Write the machine-readable issue graph (see template) and run:
 
@@ -36,9 +32,9 @@ Write the machine-readable issue graph (see template) and run:
 python3 <this-skill-dir>/scripts/check_breakdown.py docs/specs/<slug>/breakdown.md
 ```
 
-It checks for unknown dependencies, cycles, dependencies that aren't in an earlier wave, and same-wave file overlaps. Fix anything it reports and re-run until it passes. Mention the parallelism summary it prints when you report back.
+It works out the waves from `depends_on` (an issue runs one wave after its latest dependency) and checks for unknown dependencies, cycles, and same-wave file overlaps. Fix anything it reports and re-run until it passes. Copy the waves it prints into the Waves section and each issue's **Wave** line, and mention its parallelism summary when you report back. A long chain of single-issue waves means the slicing could be better.
 
-## 6. Write breakdown.md
+## 5. Write breakdown.md
 
 ~~~markdown
 # <Feature name> — Breakdown
@@ -63,7 +59,7 @@ Last updated: <YYYY-MM-DD>
 {
   "feature": "<slug>",
   "issues": [
-    {"id": "I1", "title": "...", "wave": 0, "depends_on": [], "touches": ["src/types/invite.ts", "db/migrations/"]}
+    {"id": "I1", "title": "...", "depends_on": [], "touches": ["src/types/invite.ts", "db/migrations/"]}
   ]
 }
 ```

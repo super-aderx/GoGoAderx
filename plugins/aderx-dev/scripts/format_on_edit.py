@@ -20,7 +20,6 @@ from pathlib import Path
 from aderx_dev_common import load_config, read_payload
 
 # Dependency, build-output and tooling directories that are never formatted.
-# Projects can add more with `hooks.formatIgnoreDirs` (a list of directory names) in config.json.
 SKIP_DIRS = {
     ".git", ".hg", ".svn", ".idea", ".vscode",
     "node_modules", "vendor", "third_party",
@@ -69,8 +68,7 @@ def main() -> int:
         inside_repo = path.resolve().relative_to(root.resolve())
     except ValueError:
         return 0  # file is outside the repo
-    extra_skip = set((config.get("hooks") or {}).get("formatIgnoreDirs") or [])
-    if (SKIP_DIRS | extra_skip) & set(inside_repo.parts[:-1]):
+    if SKIP_DIRS & set(inside_repo.parts[:-1]):
         return 0
 
     picked = pick_command(config, root, path)

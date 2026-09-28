@@ -86,8 +86,9 @@ As a <role>, I want to <action>, so that <value>.
 <Extra context the user and you agreed on in the earlier stages.>
 
 ## Proposed Solution
-<!-- Base these on the current codebase (name real files, modules, APIs), your own expertise, and what the user asked for.
-     Give more than one option when there's a real choice, so the user can weigh them. -->
+<!-- Base these on the current codebase (name real files, modules, APIs) and the tech plan.
+     A decision already recorded in tech-plan.md is settled: write it as the one option, no alternatives.
+     Give more than one option only for a choice that is still open. -->
 ### Option A: <name> (recommended)
 <How it works, and which files and components it touches.>
 - Pros: ...
@@ -127,7 +128,8 @@ As a <role>, I want to <action>, so that <value>.
 Rules:
 
 - **Description** is the user story (or bug description) the user submitted, refined together with the user in earlier stages. Don't invent a new one here. If it's missing or vague, ask before filing.
-- **Proposed Solution** must be grounded in the actual code. Read the relevant files before writing it, and don't propose APIs or modules that don't exist unless the option is to create them.
+- **Proposed Solution** must be grounded in the actual code and must not reopen decisions from tech-plan.md. Don't propose APIs or modules that don't exist unless the option is to create them.
+- **Others** on every sub-issue starts with `Spec: docs/specs/<slug>/ (issue I<n>)`, so `/aderx-dev:plan` can find the tech plan and treat its contracts as settled.
 - **Bug tickets** must include enough detail for someone else to reproduce the bug. If the steps, expected result, or actual result are missing, ask the user instead of guessing.
 - **Blockers** in the text must match the `blockedBy` relations set on the issue.
 

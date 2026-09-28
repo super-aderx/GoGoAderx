@@ -18,17 +18,32 @@ def run_checker(path: Path) -> subprocess.CompletedProcess:
     return subprocess.run([sys.executable, str(CHECKER), str(path)], capture_output=True, text=True)
 
 
-def test_valid_breakdown_passes():
+def test_valid_breakdown_passes_and_derives_waves():
     result = run_checker(FIXTURES / "breakdown-valid.md")
     assert result.returncode == 0, result.stdout + result.stderr
     assert "OK:" in result.stdout
+    for line in ("wave 0: I1", "wave 1: I2, I3", "wave 2: I4", "max parallel: 2"):
+        assert line in result.stdout, line
 
 
-def test_invalid_breakdown_reports_every_problem():
+def test_invalid_breakdown_reports_unknown_deps_and_cycles():
     result = run_checker(FIXTURES / "breakdown-invalid.md")
     assert result.returncode == 1
-    for problem in ("earlier wave", "unknown issue I9", "dependency cycle", "overlapping paths"):
+    for problem in ("unknown issue I9", "dependency cycle"):
         assert problem in result.stdout, problem
+
+
+def test_same_wave_overlap_is_reported(tmp_path):
+    issues = [
+        {"id": "I1", "touches": ["src/types.ts"]},
+        {"id": "I2", "depends_on": ["I1"], "touches": ["src/api/"]},
+        {"id": "I3", "depends_on": ["I1"], "touches": ["src/api/invite.ts"]},
+    ]
+    path = tmp_path / "breakdown.md"
+    path.write_text("```json\n" + json.dumps({"issues": issues}) + "\n```\n")
+    result = run_checker(path)
+    assert result.returncode == 1
+    assert "wave 1: I2 and I3 touch overlapping paths" in result.stdout
 
 
 def test_missing_issues_block_is_bad_input(tmp_path):
@@ -43,11 +58,10 @@ def test_missing_issues_block_is_bad_input(tmp_path):
     "issues, message",
     [
         ([], '"issues" is empty'),
-        ([{"wave": 0, "touches": ["a"]}], 'has no string "id"'),
+        ([{"touches": ["a"]}], 'has no string "id"'),
         (["I1"], "is not an object"),
-        ([{"id": "I1", "wave": "0", "touches": ["a"]}], '"wave" must be an integer'),
-        ([{"id": "I1", "wave": 0, "touches": "src/"}], '"touches" must be a list of strings'),
-        ([{"id": "I1", "wave": 0, "touches": ["a"], "depends_on": "I0"}], '"depends_on" must be a list'),
+        ([{"id": "I1", "touches": "src/"}], '"touches" must be a list of strings'),
+        ([{"id": "I1", "touches": ["a"], "depends_on": "I0"}], '"depends_on" must be a list'),
     ],
 )
 def test_malformed_issues_are_bad_input_not_a_crash(tmp_path, issues, message):

@@ -1,6 +1,6 @@
 {
   "name": "aderx-pm",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Product-management workflow: grill a vague idea into concrete requirements, turn them into a codebase-grounded technical plan, break it into parallelizable issues, and file them in Linear.",
   "author": {
     "name": "aderx"

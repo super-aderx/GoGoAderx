@@ -11,13 +11,13 @@
       "name": "aderx-pm",
       "source": "./plugins/aderx-pm",
       "description": "Grill a vague idea into concrete requirements, turn them into a codebase-grounded technical plan, break it into parallelizable issues, and file them in Linear.",
-      "version": "0.1.0"
+      "version": "0.2.0"
     },
     {
       "name": "aderx-dev",
       "source": "./plugins/aderx-dev",
-      "description": "Ticket-to-PR workflow for any language: spec, build with an independent verifier, create and review the PR behind approval gates.",
-      "version": "0.1.0"
+      "description": "Ticket-to-PR workflow: spec, build with an independent verifier, create the PR behind approval gates, handle review comments.",
+      "version": "0.2.0"
     }
   ]
 }

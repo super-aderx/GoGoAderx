@@ -1,7 +1,7 @@
 {
   "name": "aderx-dev",
-  "version": "0.1.0",
-  "description": "Ticket-to-PR development workflow for any language: turn a Linear ticket into an approved spec, implement it with an independent verifier, then create and review the pull request behind explicit approval gates.",
+  "version": "0.2.0",
+  "description": "Ticket-to-PR workflow: turn a Linear ticket into an approved spec, build it with an independent verifier, open the PR behind approval gates, and handle review comments.",
   "author": {
     "name": "aderx"
   }

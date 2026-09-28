@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PreToolUse hook (matcher: Bash): keeps git pushes under the user's control.
+"""PreToolUse hook (matcher: Bash): blocks the git operations that are hard to undo.
 
 Runs only in repositories that have .aderx-dev/config.json.
 
@@ -11,15 +11,13 @@ BLOCKS (exit 2, the agent is told why):
   * `git push --all` / `--branches` (would include protected branches)
   * `gh pr merge` (merging is a human decision in this workflow)
 
-ASKS (permissionDecision "ask") for every other real `git push`. Claude Code then shows
-its own confirmation prompt to the user, even if an allow rule would otherwise let the
-command through, and the prompt describes what is about to be published. `--dry-run`
-pushes publish nothing and are not prompted.
+Every other command is left alone: Claude Code's own permission prompt and pr-create's
+push approval decide whether it runs. The real protection for the base branch belongs on
+the server (branch protection or rulesets); this hook is an early, local warning.
 """
 from __future__ import annotations
 
 import fnmatch
-import json
 import os
 import re
 import shlex
@@ -39,7 +37,6 @@ PUSH_OPTS_WITH_VALUE = {"--repo", "--push-option", "--receive-pack", "--exec", "
 SHORT_PUSH_OPT_WITH_VALUE = "o"
 SHORT_FORCE = re.compile(r"-[A-Za-z]*f[A-Za-z]*")
 CRUDE_PUSH = re.compile(r"\bgit\b[^\n;&|]*\bpush\b")
-MAX_SUBJECTS = 5
 
 
 class PushArgs(NamedTuple):
@@ -80,19 +77,6 @@ def git_invocations(tokens: list[str]) -> Iterator[tuple[str, list[str], list[st
         yield tokens[j], args, tokens[i + 1:j]
 
 
-def push_invocations(command: str) -> list[tuple[list[str], list[str]]]:
-    """(global options, push arguments) for every `git push` in a command line.
-
-    If the command cannot be tokenized but looks like it contains a push, return a single
-    empty entry, so the caller errs on the side of asking the user.
-    """
-    try:
-        tokens = tokenize(command)
-    except ValueError:
-        return [([], [])] if CRUDE_PUSH.search(command) else []
-    return [(global_opts, args) for sub, args, global_opts in git_invocations(tokens) if sub == "push"]
-
-
 def parse_push_args(args: list[str]) -> PushArgs:
     """Split `git push` arguments the way git does, so option values are never positionals."""
     options: list[str] = []
@@ -130,11 +114,6 @@ def parse_push_args(args: list[str]) -> PushArgs:
     # A repository given as an argument wins over --repo, as in git.
     remote = positional[0] if positional else repo_option
     return PushArgs(options, remote, positional[1:])
-
-
-def is_dry_run(args: list[str]) -> bool:
-    options = parse_push_args(args).options
-    return "--dry-run" in options or any(not o.startswith("--") and "n" in o for o in options)
 
 
 def check_push(args: list[str], current_branch: Optional[str], protected: list[str]) -> Optional[str]:
@@ -229,46 +208,6 @@ def current_branch_of(cwd: Path, git_opts: Sequence[str] = ()) -> Optional[str]:
     return branch if branch and branch != "HEAD" else None
 
 
-def describe_push(cwd: Path, args: list[str], current_branch: Optional[str], git_opts: Sequence[str] = ()) -> str:
-    """Human-readable summary of what a push would publish, for the approval prompt."""
-    push = parse_push_args(args)
-    remote = push.remote or "origin"
-    refspecs = push.refspecs
-    url = _git(cwd, *git_opts, "remote", "get-url", remote)
-    where = f"{url} ({remote})" if url else remote
-
-    deleting = "--delete" in push.options or "-d" in push.options or any(s.startswith(":") for s in refspecs)
-    if deleting:
-        names = ", ".join(s.lstrip(":") or "?" for s in refspecs) or "a remote ref"
-        return f"aderx-dev: approve this git push? It DELETES remote ref(s) {names} on {where}."
-
-    target = ", ".join(refspecs) if refspecs else (current_branch or "the current branch")
-    lines = [f"aderx-dev: approve this git push? It publishes code to {where}, ref: {target}."]
-
-    src = (refspecs[0].lstrip("+").partition(":")[0] if refspecs else "") or "HEAD"
-    remotes_arg = f"--remotes={remote}" if url else "--remotes"
-    count = _git(cwd, *git_opts, "rev-list", "--count", src, "--not", remotes_arg)
-    if count.isdigit():
-        n = int(count)
-        lines.append(f"Commits not yet on the remote: {n}.")
-        if n:
-            subjects = _git(cwd, *git_opts, "log", "--oneline", f"-{MAX_SUBJECTS}", src, "--not", remotes_arg)
-            lines.extend(f"  {s}" for s in subjects.splitlines())
-            if n > MAX_SUBJECTS:
-                lines.append(f"  ... and {n - MAX_SUBJECTS} more")
-    return "\n".join(lines)
-
-
-def ask_decision(reason: str) -> dict:
-    return {
-        "hookSpecificOutput": {
-            "hookEventName": "PreToolUse",
-            "permissionDecision": "ask",
-            "permissionDecisionReason": reason,
-        }
-    }
-
-
 def main() -> int:
     payload = read_payload()
     command = (payload.get("tool_input") or {}).get("command")
@@ -297,11 +236,6 @@ def main() -> int:
             file=sys.stderr,
         )
         return 2
-
-    real_pushes = [(opts, args) for opts, args in push_invocations(command) if not is_dry_run(args)]
-    if real_pushes:
-        git_opts, args = real_pushes[0]
-        print(json.dumps(ask_decision(describe_push(cwd, args, branch_of(git_opts), git_opts))))
     return 0
 
 
